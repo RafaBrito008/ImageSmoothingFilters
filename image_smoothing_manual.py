@@ -7,83 +7,125 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.fft import fft2, fftshift
 
 
-def apply_average_filter(image, kernel_size):
-    # Extender los bordes de la imagen para manejar los bordes durante el filtrado
-    padded_image = cv2.copyMakeBorder(
-        image,
-        kernel_size // 2,
-        kernel_size // 2,
-        kernel_size // 2,
-        kernel_size // 2,
-        cv2.BORDER_REFLECT,
-    )
+class SmoothingFilters:
+    @staticmethod
+    def apply_average_filter(image, kernel_size):
+        """
+        Aplica un filtro promedio a la imagen proporcionada utilizando un kernel cuadrado del tamaño especificado.
+        El filtro promedio reemplaza cada píxel con el promedio de los píxeles de su vecindario.
 
-    # Preparar la imagen de salida
-    output_image = np.zeros_like(image)
+        :param image: Imagen de entrada como una matriz NumPy.
+        :param kernel_size: Tamaño del lado del kernel cuadrado.
+        :return: Imagen filtrada.
+        """
+        # Agrega píxeles alrededor de los bordes para permitir el cálculo del vecindario para los píxeles de borde.
+        padded_image = cv2.copyMakeBorder(
+            image,
+            kernel_size // 2,
+            kernel_size // 2,
+            kernel_size // 2,
+            kernel_size // 2,
+            cv2.BORDER_REFLECT,
+        )
 
-    # Calcular el promedio de los píxeles en el vecindario del kernel para cada píxel en la imagen
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            # Extraer la región del kernel
-            kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
-            # Calcular el promedio y asignarlo a la imagen de salida
-            output_image[i, j] = np.mean(kernel_region)
+        # Inicializa la imagen de salida con ceros, del mismo tamaño que la imagen de entrada.
+        output_image = np.zeros_like(image)
 
-    return output_image
+        # Itera sobre cada píxel de la imagen.
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                # Extrae la región del vecindario del píxel actual basado en el tamaño del kernel.
+                kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
+                # Calcula el promedio de los píxeles del vecindario y asigna el resultado al píxel correspondiente.
+                output_image[i, j] = np.mean(kernel_region)
 
+        return output_image
 
-def apply_median_filter(image, kernel_size):
-    # Extender los bordes de la imagen para manejar los bordes durante el filtrado
-    padded_image = cv2.copyMakeBorder(
-        image,
-        kernel_size // 2,
-        kernel_size // 2,
-        kernel_size // 2,
-        kernel_size // 2,
-        cv2.BORDER_REFLECT,
-    )
+    @staticmethod
+    def apply_median_filter(image, kernel_size):
+        """
+        Aplica un filtro de mediana a la imagen utilizando un kernel cuadrado del tamaño especificado.
+        El filtro de mediana reemplaza cada píxel por la mediana de los píxeles en su vecindario.
 
-    # Preparar la imagen de salida
-    output_image = np.zeros_like(image)
+        :param image: Imagen de entrada como una matriz NumPy.
+        :param kernel_size: Tamaño del lado del kernel cuadrado.
+        :return: Imagen filtrada.
+        """
+        # Agrega píxeles alrededor de los bordes de la misma manera que en el filtro promedio.
+        padded_image = cv2.copyMakeBorder(
+            image,
+            kernel_size // 2,
+            kernel_size // 2,
+            kernel_size // 2,
+            kernel_size // 2,
+            cv2.BORDER_REFLECT,
+        )
 
-    # Calcular la mediana de los píxeles en el vecindario del kernel para cada píxel en la imagen
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            # Extraer la región del kernel
-            kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
-            # Calcular la mediana y asignarlo a la imagen de salida
-            output_image[i, j] = np.median(kernel_region)
+        # Inicializa la imagen de salida con ceros.
+        output_image = np.zeros_like(image)
 
-    return output_image
+        # Itera sobre cada píxel de la imagen.
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                # Extrae la región del vecindario del píxel actual.
+                kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
+                # Calcula la mediana de los píxeles del vecindario y asigna el resultado al píxel correspondiente.
+                output_image[i, j] = np.median(kernel_region)
 
+        return output_image
 
-def generate_gaussian_kernel(kernel_size, sigma):
-    ax = np.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
-    xx, yy = np.meshgrid(ax, ax)
-    kernel = np.exp(-0.5 * (np.square(xx) + np.square(yy)) / np.square(sigma))
-    return kernel / np.sum(kernel)
+    @staticmethod
+    def generate_gaussian_kernel(kernel_size, sigma):
+        """
+        Genera un kernel gaussiano que se utilizará para el filtrado gaussiano.
 
+        :param kernel_size: Tamaño del lado del kernel cuadrado.
+        :param sigma: Desviación estándar de la distribución gaussiana.
+        :return: Kernel gaussiano como una matriz NumPy.
+        """
+        # Crea un rango de valores de acuerdo al tamaño del kernel para calcular el kernel gaussiano.
+        ax = np.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
+        # Crea una cuadrícula 2D de valores desde la matriz lineal.
+        xx, yy = np.meshgrid(ax, ax)
+        # Aplica la fórmula gaussiana a cada elemento de la cuadrícula.
+        kernel = np.exp(-0.5 * (np.square(xx) + np.square(yy)) / np.square(sigma))
+        # Normaliza el kernel para que la suma de todos sus elementos sea igual a 1.
+        return kernel / np.sum(kernel)
 
-def apply_gaussian_filter(image, kernel_size, sigma):
-    kernel = generate_gaussian_kernel(kernel_size, sigma)
-    padded_image = cv2.copyMakeBorder(
-        image,
-        kernel_size // 2,
-        kernel_size // 2,
-        kernel_size // 2,
-        kernel_size // 2,
-        cv2.BORDER_REFLECT,
-    )
+    @staticmethod
+    def apply_gaussian_filter(image, kernel_size, sigma):
+        """
+        Aplica un filtro gaussiano a la imagen proporcionada.
 
-    output_image = np.zeros_like(image)
+        :param image: Imagen de entrada como una matriz NumPy.
+        :param kernel_size: Tamaño del lado del kernel cuadrado.
+        :param sigma: Desviación estándar del kernel gaussiano.
+        :return: Imagen filtrada.
+        """
+        # Genera el kernel gaussiano utilizando la función anterior.
+        kernel = SmoothingFilters.generate_gaussian_kernel(kernel_size, sigma)
+        # Agrega píxeles alrededor de los bordes de la imagen.
+        padded_image = cv2.copyMakeBorder(
+            image,
+            kernel_size // 2,
+            kernel_size // 2,
+            kernel_size // 2,
+            kernel_size // 2,
+            cv2.BORDER_REFLECT,
+        )
 
-    # Aplicar el kernel gaussiano a la imagen
-    for i in range(image.shape[0]):
-        for j in range(image.shape[1]):
-            kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
-            output_image[i, j] = np.sum(kernel_region * kernel)
+        # Inicializa la imagen de salida con ceros.
+        output_image = np.zeros_like(image)
 
-    return output_image
+        # Aplica el kernel gaussiano a cada píxel de la imagen.
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                # Extrae la región correspondiente al vecindario del píxel.
+                kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
+                # Realiza la operación de convolución: multiplica el kernel por los píxeles del vecindario y suma los resultados.
+                output_image[i, j] = np.sum(kernel_region * kernel)
+
+        return output_image
 
 
 # Clase principal de la aplicación de procesamiento de imágenes
@@ -145,25 +187,17 @@ class ImageProcessorApp:
             img_gray, noise
         )  # Sumar el ruido a la imagen en escala de grises
 
-        # Crear filtros y aplicarlos
-        # Filtro promedio: crea una matriz donde todos los valores son iguales y suma 1. Se divide por el área (filter_size^2) para normalizar
-        filtro_promedio = np.ones((filter_size, filter_size)) / (filter_size**2)
-
-        # Filtro gaussiano: crea un núcleo gaussiano unidimensional y luego lo convierte en un núcleo bidimensional
-        filtro_mediana = cv2.getGaussianKernel(filter_size, gaussian_sigma)
-        filtro_mediana = np.outer(
-            filtro_mediana, filtro_mediana
-        )  # Producto exterior para obtener un filtro gaussiano 2D
-
         # Aplicar filtros a la imagen
         # Aplicar filtro promedio
-        img_promedio = apply_average_filter(img_noisy, filter_size)
+        img_promedio = SmoothingFilters.apply_average_filter(img_noisy, filter_size)
 
         # Aplicar filtro de mediana
-        img_mediana = apply_median_filter(img_noisy, filter_size)
+        img_mediana = SmoothingFilters.apply_median_filter(img_noisy, filter_size)
 
         # Aplicar filtro gaussiano
-        img_gaussiano = apply_gaussian_filter(img_noisy, filter_size, gaussian_sigma)
+        img_gaussiano = SmoothingFilters.apply_gaussian_filter(
+            img_noisy, filter_size, gaussian_sigma
+        )
 
         # Realizar transformada de Fourier y calcular espectro
         # La transformada de Fourier convierte la imagen del dominio del espacio al dominio de la frecuencia
