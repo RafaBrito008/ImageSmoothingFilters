@@ -57,6 +57,35 @@ def apply_median_filter(image, kernel_size):
     return output_image
 
 
+def generate_gaussian_kernel(kernel_size, sigma):
+    ax = np.linspace(-(kernel_size - 1) / 2.0, (kernel_size - 1) / 2.0, kernel_size)
+    xx, yy = np.meshgrid(ax, ax)
+    kernel = np.exp(-0.5 * (np.square(xx) + np.square(yy)) / np.square(sigma))
+    return kernel / np.sum(kernel)
+
+
+def apply_gaussian_filter(image, kernel_size, sigma):
+    kernel = generate_gaussian_kernel(kernel_size, sigma)
+    padded_image = cv2.copyMakeBorder(
+        image,
+        kernel_size // 2,
+        kernel_size // 2,
+        kernel_size // 2,
+        kernel_size // 2,
+        cv2.BORDER_REFLECT,
+    )
+
+    output_image = np.zeros_like(image)
+
+    # Aplicar el kernel gaussiano a la imagen
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            kernel_region = padded_image[i : i + kernel_size, j : j + kernel_size]
+            output_image[i, j] = np.sum(kernel_region * kernel)
+
+    return output_image
+
+
 # Clase principal de la aplicación de procesamiento de imágenes
 class ImageProcessorApp:
     def __init__(self, root):
@@ -127,15 +156,14 @@ class ImageProcessorApp:
         )  # Producto exterior para obtener un filtro gaussiano 2D
 
         # Aplicar filtros a la imagen
-        img_promedio = apply_average_filter(
-            img_noisy, filter_size
-        )  # Aplica el filtro promedio a la imagen con ruido
-        img_mediana = apply_median_filter(
-            img_noisy, filter_size
-        )  # Aplica un filtro de mediana, útil para reducir el ruido tipo 'sal y pimienta'
-        img_gaussiano = cv2.filter2D(
-            img_noisy, -1, filtro_mediana
-        )  # Aplica el filtro gaussiano, que suaviza la imagen reduciendo los detalles
+        # Aplicar filtro promedio
+        img_promedio = apply_average_filter(img_noisy, filter_size)
+
+        # Aplicar filtro de mediana
+        img_mediana = apply_median_filter(img_noisy, filter_size)
+
+        # Aplicar filtro gaussiano
+        img_gaussiano = apply_gaussian_filter(img_noisy, filter_size, gaussian_sigma)
 
         # Realizar transformada de Fourier y calcular espectro
         # La transformada de Fourier convierte la imagen del dominio del espacio al dominio de la frecuencia
