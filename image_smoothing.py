@@ -42,29 +42,36 @@ class ImageProcessorApp:
             self.process_image()
 
     def process_image(self):
+        # Parámetros configurables
+        noise_intensity = 25
+        filter_size = 3
+        gaussian_sigma = 1
+
+        # Cargar y procesar la imagen
         img = cv2.imread(self.image_path)
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Generar ruido y asegurarse de que está en el tipo de datos correcto
-        noise = np.random.normal(0, 25, img_gray.shape).astype(np.uint8)
+        noise = np.random.normal(0, noise_intensity, img_gray.shape).astype(np.uint8)
 
         # Añadir ruido a la imagen en escala de grises
         img_noisy = cv2.add(img_gray, noise)
 
-        filtro_promedio = np.ones((3, 3)) / 9
-        filtro_mediana = cv2.getGaussianKernel(3, 1)
+        filtro_promedio = np.ones((filter_size, filter_size)) / (filter_size**2)
+        filtro_mediana = cv2.getGaussianKernel(filter_size, gaussian_sigma)
         filtro_mediana = np.outer(filtro_mediana, filtro_mediana)
 
         img_promedio = cv2.filter2D(img_noisy, -1, filtro_promedio)
-        img_mediana = cv2.medianBlur(img_noisy, 3)
+        img_mediana = cv2.medianBlur(img_noisy, filter_size)
         img_gaussiano = cv2.filter2D(img_noisy, -1, filtro_mediana)
 
         img_fft = fftshift(fft2(img_noisy))
         img_fft_abs = np.log(1 + np.abs(img_fft))
 
+        # Creación de subplots para visualización
         fig, axs = plt.subplots(2, 3, figsize=(10, 7))
 
-        # Mostrar la imagen original en color
+        # Visualización de las imágenes procesadas
         axs[0, 0].imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
         axs[0, 0].set_title("Imagen Original")
         axs[0, 0].axis("off")
