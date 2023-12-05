@@ -6,6 +6,23 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.fft import fft2, fftshift
 
+def apply_average_filter(image, kernel_size):
+    # Extender los bordes de la imagen para manejar los bordes durante el filtrado
+    padded_image = cv2.copyMakeBorder(image, kernel_size//2, kernel_size//2, kernel_size//2, kernel_size//2, cv2.BORDER_REFLECT)
+    
+    # Preparar la imagen de salida
+    output_image = np.zeros_like(image)
+
+    # Calcular el promedio de los píxeles en el vecindario del kernel para cada píxel en la imagen
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            # Extraer la región del kernel
+            kernel_region = padded_image[i:i+kernel_size, j:j+kernel_size]
+            # Calcular el promedio y asignarlo a la imagen de salida
+            output_image[i, j] = np.mean(kernel_region)
+    
+    return output_image
+
 
 # Clase principal de la aplicación de procesamiento de imágenes
 class ImageProcessorApp:
@@ -47,6 +64,8 @@ class ImageProcessorApp:
         if self.image_path:
             self.process_image()  # Si se selecciona una imagen, procesarla
 
+
+
     def process_image(self):
         # Parámetros configurables para el procesamiento de la imagen
         noise_intensity = 25  # Intensidad del ruido a añadir. Cuanto mayor es el valor, más intenso es el ruido.
@@ -77,9 +96,7 @@ class ImageProcessorApp:
         )  # Producto exterior para obtener un filtro gaussiano 2D
 
         # Aplicar filtros a la imagen
-        img_promedio = cv2.filter2D(
-            img_noisy, -1, filtro_promedio
-        )  # Aplica el filtro promedio a la imagen con ruido
+        img_promedio = apply_average_filter(img_noisy, filter_size)# Aplica el filtro promedio a la imagen con ruido
         img_mediana = cv2.medianBlur(
             img_noisy, filter_size
         )  # Aplica un filtro de mediana, útil para reducir el ruido tipo 'sal y pimienta'
