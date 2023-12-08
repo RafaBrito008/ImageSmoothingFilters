@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.fft import fft2, fftshift
+import os
 
 
 class SmoothingFilters:
@@ -168,6 +169,20 @@ class ImageProcessorApp:
         if self.image_path:
             self.process_image()  # Si se selecciona una imagen, procesarla
 
+    def save_image(self, image, image_name):
+        """
+        Guarda una imagen procesada en el disco duro.
+
+        :param image: Imagen procesada a guardar.
+        :param image_name: Nombre bajo el cual se guardará la imagen.
+        """
+        # Construye el nombre del archivo basado en el nombre de la imagen original y el tipo de procesamiento aplicado
+        original_name = os.path.splitext(os.path.basename(self.image_path))[0]
+        filename = f"{original_name}_{image_name}.jpg"
+
+        # Guarda la imagen en el formato PNG
+        cv2.imwrite(filename, image)
+
     def process_image(self):
         # Parámetros configurables para el procesamiento de la imagen
         noise_intensity = 25  # Intensidad del ruido a añadir. Cuanto mayor es el valor, más intenso es el ruido.
@@ -207,6 +222,12 @@ class ImageProcessorApp:
         img_fft_abs = np.log(
             1 + np.abs(img_fft)
         )  # Usa el logaritmo para mejorar la visualización del espectro de frecuencias
+
+        # Guardar las imágenes procesadas
+        self.save_image(img_noisy, "noisy")
+        self.save_image(img_promedio, "average_filtered")
+        self.save_image(img_mediana, "median_filtered")
+        self.save_image(img_gaussiano, "gaussian_filtered")
 
         # Configuración de la visualización de resultados
         fig, axs = plt.subplots(
