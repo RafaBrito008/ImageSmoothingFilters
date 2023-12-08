@@ -176,11 +176,20 @@ class ImageProcessorApp:
         :param image: Imagen procesada a guardar.
         :param image_name: Nombre bajo el cual se guardará la imagen.
         """
-        # Construye el nombre del archivo basado en el nombre de la imagen original y el tipo de procesamiento aplicado
+        # Obtener el nombre base de la imagen original
         original_name = os.path.splitext(os.path.basename(self.image_path))[0]
-        filename = f"{original_name}_{image_name}.jpg"
+        
+        # Crear un nombre de carpeta con '_Processed' al final
+        folder_name = f"{original_name}_Processed"
 
-        # Guarda la imagen en el formato PNG
+        # Verificar si la carpeta existe. Si no, crearla.
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        # Construir la ruta completa del archivo donde se guardará la imagen
+        filename = os.path.join(folder_name, f"{original_name}_{image_name}.jpg")
+
+        # Guardar la imagen en el formato deseado
         cv2.imwrite(filename, image)
 
     def process_image(self):
