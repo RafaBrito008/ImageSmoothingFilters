@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.fft import fft2, fftshift
+import os
 
 
 class SmoothingFilters:
@@ -248,6 +249,29 @@ class ImageProcessorApp:
         if self.image_path:
             self.process_image()  # Si se selecciona una imagen, procesarla
 
+    def save_image(self, image, image_name):
+        """
+        Guarda una imagen procesada en el disco duro.
+
+        :param image: Imagen procesada a guardar.
+        :param image_name: Nombre bajo el cual se guardará la imagen.
+        """
+        # Obtener el nombre base de la imagen original
+        original_name = os.path.splitext(os.path.basename(self.image_path))[0]
+        
+        # Crear un nombre de carpeta con '_Processed' al final
+        folder_name = f"{original_name}_Processed"
+
+        # Verificar si la carpeta existe. Si no, crearla.
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        # Construir la ruta completa del archivo donde se guardará la imagen
+        filename = os.path.join(folder_name, f"{original_name}_{image_name}.jpg")
+
+        # Guardar la imagen en el formato deseado
+        cv2.imwrite(filename, image)
+
     def process_image(self):
         # Parámetros configurables para el procesamiento de la imagen
         noise_intensity = 25  # Intensidad del ruido a añadir. Cuanto mayor es el valor, más intenso es el ruido.
@@ -284,6 +308,12 @@ class ImageProcessorApp:
         fft_image = FourierTransforms.fft2d(img_noisy)
         shifted_fft = FourierTransforms.shift_fft_quadrants(fft_image)
         magnitude_spectrum = FourierTransforms.calculate_magnitude_spectrum(shifted_fft)
+
+                # Guardar las imágenes procesadas
+        self.save_image(img_noisy, "noisy")
+        self.save_image(img_promedio, "average_filtered")
+        self.save_image(img_mediana, "median_filtered")
+        self.save_image(img_gaussiano, "gaussian_filtered")
 
         # Configuración de la visualización de resultados
         fig, axs = plt.subplots(
